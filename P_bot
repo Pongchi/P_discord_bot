@@ -24,6 +24,7 @@ import requests
 from bs4 import BeautifulSoup
 import urllib.request
 import time
+import os
 '''======================================================================='''
 
 translator = Translator()
@@ -204,5 +205,6 @@ async def on_message(message):
                 if cnt == 20:
                     break'''
             
-client.run(process.env.TOKEN)
+access_token = os.environ["BOT_TOKEN"]
+client.run(access_token)
 
