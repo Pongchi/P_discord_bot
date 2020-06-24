@@ -1,0 +1,208 @@
+"""
+
+# ?
+> message.content.startwith( "?" ):
+> message.content.endwith( "?" ):
+
+# 함수
+> async def on_member_join(self, member):
+    msg = "<@{}>님이 서버에 들어오셨어요. 환영합니다.".format(str(member.id))
+> async def on_member_remove(self, member):
+
+# ?
+> await message.channel.send( "?" )
+
+"""
+import discord
+import asyncio
+from discord.ext import commands
+from discord.ext.commands import bot
+
+from googletrans import Translator
+
+import requests
+from bs4 import BeautifulSoup
+import urllib.request
+import time
+'''======================================================================='''
+
+translator = Translator()
+
+client = discord.Client()
+
+sup_weather = ""
+
+@client.event
+async def on_ready():
+
+    print("=========================")
+    print("다음으로 로그인 합니다 : ")
+    print(client.user.name)
+    print("connection was successful")
+    game = discord.Game("League of Legends")
+    print("=========================")
+    await client.change_presence(status=discord.Status.online, activity=game)
+
+@client.event
+async def on_message(message):
+    global time, sup_weather
+    
+    if message.author.bot:
+        return None
+
+    msg = message.content.split(" ")
+    
+    if message.content.startswith("퐁치야"):  
+        if len(message.content) == 3:
+            await message.channel.send("부르셨습니까? 주인님 \n저를 사용하고 싶다면 '퐁치야 도움말' 이라고 쳐주세요.\n퐁! {0}초.format(client.latency)")
+            
+        if message.content[4:6] == "안녕":
+            await message.channel.send("ㅎㅇ?")
+
+        if message.content[4:7] == "도움말":
+            await message.channel.send("- 퐁치야 도움말 \n- 퐁치야 안녕 \n- 퐁치야 번역 \n- 퐁치야 멜론차트 \n- 퐁치야 간편멜론차트")
+
+        if message.content[4:6] == "번역":
+            if len(message.content) == 6:
+                await message.channel.send('예시 : "퐁치야 번역 한글을 영어로 박범찬 개따묵스키 \n언어 : 한글, 영어, 중국어"')
+
+            if len(message.content) > 14:
+                
+                if msg[2] == "한글을":
+                    if msg[3] == "영어로":
+                        await message.channel.send(translator.translate(message.content[14:],src='ko',dest='en').text)
+                        await message.channel.send(translator.translate(message.content[14:],src='ko',dest='en').pronunciation)
+                    if msg[3] == "중국어로":
+                        await message.channel.send(translator.translate(message.content[14:],src='ko',dest='zh-tw').text)
+                        await message.channel.send(translator.translate(message.content[14:],src='ko',dest='zh-tw').pronunciation)
+
+                if msg[2] == "영어를":                   
+                    if msg[3] == "한글로":
+                        await message.channel.send(translator.translate(message.content[14:],src='en',dest='ko').text)
+                        await message.channel.send(translator.translate(message.content[14:],src='en',dest='ko').pronunciation)
+                    if msg[3] == "중국어로":
+                        await message.channel.send(translator.translate(message.content[14:],src='en',dest='zh-tw').text)
+                        await message.channel.send(translator.translate(message.content[14:],src='en',dest='zh-tw').pronunciation)
+                        
+                if msg[2] == "중국어를":
+                    if msg[3] == "한글로":
+                        await message.channel.send(translator.translate(message.content[14:],src='zh-tw',dest='ko').text)
+                        await message.channel.send(translator.translate(message.content[14:],src='zh-tw',dest='ko').pronunciation)
+                    if msg[3] == "영어로":
+                        await message.channel.send(translator.translate(message.content[14:],src='zh-tw',dest='en').text)
+                        await message.channel.send(translator.translate(message.content[14:],src='zh-tw',dest='en').pronunciation)
+
+        if message.content[4:6] == "날씨":
+            url = "http://www.kma.go.kr/wid/queryDFSRSS.jsp?zone=4812963000"
+            request = urllib.request.urlopen(url)
+            xml = request.read()
+            soup = BeautifulSoup(xml, "html.parser")
+            datas = soup.find_all("data")
+            
+            for data in datas:
+                sup_weather += "\n" + "[ " + data.find("hour").text.strip() + ":00 ] " + data.find("temp").string + "도씨, " + data.find("wfkor").string + ", " + data.find("reh").string + "% 정도 습함, " + data.find("wdkor").string + "풍 " + data.find("ws").string + "m/s"
+                
+            await message.channel.send(soup.find("title").string + "\n" + soup.find("pubdate").string + "때 자료입니다." + "\n" + sup_weather)
+
+        if message.content[4:8] == "멜론차트":
+            if len(message.content) <= 8:
+                await message.channel.send('예시 : "퐁치야 멜론차트 20" - 20위까지 불러옵니다. 최대 39')
+
+            if len(message.content) > 10:
+                if __name__ == "__main__":
+                    RANK = int(message.content[9:])
+
+                    header = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Trident/7.0; rv:11.0) like Gecko'}
+                    req = requests.get('https://www.melon.com/chart/week/index.htm', headers = header) ## 주간 차트를 크롤링 할 것임
+                    html = req.text
+                    parse = BeautifulSoup(html, 'html.parser')
+     
+                    titles = parse.find_all("div", {"class": "ellipsis rank01"}) 
+                    singers = parse.find_all("div", {"class": "ellipsis rank02"}) 
+                    albums = parse.find_all("div",{"class": "ellipsis rank03"})
+     
+                    title = []
+                    singer = []
+                    album = []
+                    sup_chart = ""
+                    
+                    for t in titles:
+                        title.append(t.find('a').text)
+     
+                    for s in singers:
+                        singer.append(s.find('span', {"class": "checkEllipsis"}).text)
+
+                    for a in albums:
+                        album.append(a.find('a').text)
+
+                    for i in range(RANK):
+                        sup_chart += "\n" + "%3d위: %s [ %s ] - %s"%(i+1, title[i], album[i], singer[i])
+
+                    await message.channel.send(sup_chart)
+
+        if message.content[4:10] == "간편멜론차트":
+            if len(message.content) <= 10:
+                await message.channel.send('예시 : "퐁치야 멜론차트 20" - 20위까지 불러옵니다. 최대 100')
+
+            if len(message.content) > 12:
+                if __name__ == "__main__":
+                    RANK = int(message.content[11:])
+
+                    header = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Trident/7.0; rv:11.0) like Gecko'}
+                    req = requests.get('https://www.melon.com/chart/week/index.htm', headers = header) ## 주간 차트를 크롤링 할 것임
+                    html = req.text
+                    parse = BeautifulSoup(html, 'html.parser')
+     
+                    titles = parse.find_all("div", {"class": "ellipsis rank01"}) 
+                    singers = parse.find_all("div", {"class": "ellipsis rank02"}) 
+                    albums = parse.find_all("div",{"class": "ellipsis rank03"})
+     
+                    title = []
+                    singer = []
+                    album = []
+                    sup_chart = ""
+                    
+                    for t in titles:
+                        title.append(t.find('a').text)
+     
+                    for s in singers:
+                        singer.append(s.find('span', {"class": "checkEllipsis"}).text)
+
+                    for a in albums:
+                        album.append(a.find('a').text)
+
+                    for i in range(RANK):
+                        sup_chart += "%3d위: %s ,"%(i+1, title[i])
+
+                    await message.channel.send(sup_chart)
+    '''if message.content[4:6] == "날씨":
+            if len(message.content) == 6:
+                await message.channel.send('예시 : "퐁치야 날씨 창원시 진해구 장천동"')
+                
+            if len(message.content) > 6:    
+                location = message.content[7:]
+                enc_location = urllib.parse.quote(location + '+날씨')
+
+                url = 'https://search.naver.com/search.naver?ie=utf8&query='+ enc_location
+
+                req = Request(url)
+                page = urlopen(req)
+                html = page.read()
+                soup = bs4.BeautifulSoup(html,'html5lib')
+                print(soup)
+                await message.channel.send(str(soup.find('p', class_='info_temperature').find('span', class_='todaytemp').text))
+   
+        if message.content[4:6] == "실검":
+            source = requests.get("https://www.naver.com/").text
+            soup = BeautifulSoup(source, "html.parser")
+            myUrls = soup.select('span.keyword')
+            number = 0
+            for i in myUrls:
+                number+= 1
+                print(str(index) + "," + i.text)
+                await message.channel.send(str(number)+"."+i.text)
+                if cnt == 20:
+                    break'''
+            
+client.run(process.env.TOKEN)
+
