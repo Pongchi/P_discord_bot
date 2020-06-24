@@ -1,2 +1,9 @@
 discord.py
 asyncio
+googletrans
+request
+beautifulsoup4
+bs4
+urllib3
+time
+os
